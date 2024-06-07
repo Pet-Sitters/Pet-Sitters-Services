@@ -1,6 +1,7 @@
 package main
 
 import (
+	command "Pet-Sitters-Services/command"
 	"bufio"
 	"context"
 	"fmt"
@@ -127,8 +128,6 @@ func handleMessage(message *tgbotapi.Message) {
 		err = handleCommand(message)
 	} else if strings.HasPrefix(text, "*chat") {
 		chat(message, order1)
-		//copyMsg := tgbotapi.NewCopyMessage(6048355505, message.Chat.ID, message.MessageID)
-		//_, err = bot.CopyMessage(copyMsg)
 	} else if message.Photo != nil {
 		sendPhoto(message, order1)
 	}
@@ -152,10 +151,6 @@ func handleCommand(message *tgbotapi.Message) error {
 	case "help":
 		sendHelp(message)
 		break
-		//case "chat":
-		//	sendChat(message, order1)
-		//case "photo":
-		//	sendPhoto(message, order1)
 	}
 
 	return err
@@ -182,7 +177,6 @@ func sendPhoto(message *tgbotapi.Message, order Order) {
 	var msg tgbotapi.Chattable
 
 	msg = tgbotapi.NewPhoto(receiver, tgbotapi.FileID(photo.FileID))
-	//msg = tgbotapi.NewCopyMessage(receiver, sender, message.MessageID)
 	if _, err := bot.Send(msg); err != nil {
 		panic(err)
 	}
@@ -212,7 +206,7 @@ func chat(message *tgbotapi.Message, order Order) {
 }
 
 func sendHelp(message *tgbotapi.Message) {
-	msg := tgbotapi.NewMessage(message.Chat.ID, "This is help")
+	msg := tgbotapi.NewMessage(message.Chat.ID, command.MSGHELP)
 	msg.ReplyToMessageID = message.MessageID
 	bot.Send(msg)
 }
