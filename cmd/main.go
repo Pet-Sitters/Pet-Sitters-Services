@@ -1,7 +1,7 @@
 package main
 
 import (
-	command "Pet-Sitters-Services/command"
+	"Pet-Sitters-Services/internal/command"
 	"bufio"
 	"context"
 	"fmt"
@@ -13,22 +13,21 @@ import (
 
 var (
 	// Menu texts
-	firstMenu  = "<b>Menu 1</b>\n\nA beautiful menu with a shiny inline button."
-	secondMenu = "<b>Menu 2</b>\n\nA better menu with even more shiny inline buttons."
+	firstMenu  = command.MSGHELLO
+	secondMenu = command.MSGHELP
+	faqMenu    = command.FAQ
 
 	// Button texts
-	nextButton     = "Next"
-	backButton     = "Back"
-	tutorialButton = "Tutorial"
+	helpButton = "Help"
+	backButton = "Back"
+	faqButton  = "FAQ"
 
-	// Store bot screaming status
-	screaming = false
-	bot       *tgbotapi.BotAPI
+	bot *tgbotapi.BotAPI
 
 	// Keyboard layout for the first menu. One button, one row
 	firstMenuMarkup = tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData(nextButton, nextButton),
+			tgbotapi.NewInlineKeyboardButtonData(helpButton, helpButton),
 		),
 	)
 
@@ -36,9 +35,13 @@ var (
 	secondMenuMarkup = tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(backButton, backButton),
+			tgbotapi.NewInlineKeyboardButtonData(faqButton, faqButton),
 		),
+	)
+
+	faqMenuMarkup = tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonURL(tutorialButton, "https://core.telegram.org/bots/api"),
+			tgbotapi.NewInlineKeyboardButtonData(backButton, backButton),
 		),
 	)
 )
@@ -52,6 +55,7 @@ type Order struct {
 var order1 = Order{Id: 1, ConsumerId: 241621664, SitterId: 6048355505}
 
 func main() {
+
 	var err error
 	bot, err = tgbotapi.NewBotAPI("6954948262:AAFx4f8_efENBQ7CDeu0o27d_otTVnAKP4U")
 	if err != nil {
@@ -151,9 +155,16 @@ func handleCommand(message *tgbotapi.Message) error {
 	case "help":
 		sendHelp(message)
 		break
+	case "admin":
+		callAdmin(message)
+		break
 	}
 
 	return err
+}
+
+func callAdmin(message *tgbotapi.Message) {
+
 }
 
 func sendPhoto(message *tgbotapi.Message, order Order) {
@@ -217,12 +228,18 @@ func handleButton(query *tgbotapi.CallbackQuery) {
 	markup := tgbotapi.NewInlineKeyboardMarkup()
 	message := query.Message
 
-	if query.Data == nextButton {
+	switch query.Data {
+	case helpButton:
 		text = secondMenu
 		markup = secondMenuMarkup
-	} else if query.Data == backButton {
+	case backButton:
 		text = firstMenu
 		markup = firstMenuMarkup
+	case faqButton:
+		text = faqMenu
+		markup = faqMenuMarkup
+	default:
+		text = helpButton
 	}
 
 	callbackCfg := tgbotapi.NewCallback(query.ID, "")
