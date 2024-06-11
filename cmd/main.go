@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"strings"
+	"time"
 )
 
 var (
@@ -23,6 +24,14 @@ var (
 	faqButton  = "FAQ"
 
 	bot *tgbotapi.BotAPI
+
+	numericKeyboard = tgbotapi.NewReplyKeyboard(
+		tgbotapi.NewKeyboardButtonRow(
+			tgbotapi.NewKeyboardButton("/help"),
+			tgbotapi.NewKeyboardButton("/faq"),
+			tgbotapi.NewKeyboardButton("/close"),
+		),
+	)
 
 	// Keyboard layout for the first menu. One button, one row
 	firstMenuMarkup = tgbotapi.NewInlineKeyboardMarkup(
@@ -158,9 +167,39 @@ func handleCommand(message *tgbotapi.Message) error {
 	case "admin":
 		callAdmin(message)
 		break
+	case "starttimer":
+		startTimer(message)
+		break
+	case "open":
+		keyboard(message)
+		break
+	case "close":
+		keyboardClose(message)
+		break
 	}
 
 	return err
+}
+
+func keyboardClose(message *tgbotapi.Message) {
+	msg := tgbotapi.NewMessage(message.Chat.ID, message.Text)
+	msg.ReplyMarkup = tgbotapi.NewRemoveKeyboard(true)
+	bot.Send(msg)
+}
+
+func keyboard(message *tgbotapi.Message) {
+	msg := tgbotapi.NewMessage(message.Chat.ID, message.Text)
+
+	msg.ReplyMarkup = numericKeyboard
+	bot.Send(msg)
+
+}
+
+func startTimer(message *tgbotapi.Message) {
+	t := time.NewTimer(3 * time.Second)
+	<-t.C
+	msg := tgbotapi.NewMessage(message.Chat.ID, "Пришло время для фотоотчета!")
+	bot.Send(msg)
 }
 
 func callAdmin(message *tgbotapi.Message) {
@@ -191,6 +230,8 @@ func sendPhoto(message *tgbotapi.Message, order Order) {
 	if _, err := bot.Send(msg); err != nil {
 		panic(err)
 	}
+
+	startTimer(message)
 
 }
 
