@@ -2,6 +2,7 @@ package main
 
 import (
 	"Pet-Sitters-Services/internal/command"
+	"Pet-Sitters-Services/internal/storage"
 	"bufio"
 	"context"
 	"fmt"
@@ -24,6 +25,7 @@ var (
 	faqButton  = "FAQ"
 
 	bot *tgbotapi.BotAPI
+	s   *storage.Storage
 
 	numericKeyboard = tgbotapi.NewReplyKeyboard(
 		tgbotapi.NewKeyboardButtonRow(
@@ -64,8 +66,11 @@ type Order struct {
 var order1 = Order{Id: 1, ConsumerId: 241621664, SitterId: 6048355505}
 
 func main() {
-
 	var err error
+
+	s, err := storage.New()
+	s.GetAll()
+
 	bot, err = tgbotapi.NewBotAPI("6954948262:AAFx4f8_efENBQ7CDeu0o27d_otTVnAKP4U")
 	if err != nil {
 		// Abort if something is wrong
@@ -176,6 +181,8 @@ func handleCommand(message *tgbotapi.Message) error {
 	case "close":
 		keyboardClose(message)
 		break
+	case "startorder":
+		startOrder(s)
 	}
 
 	return err
@@ -192,7 +199,6 @@ func keyboard(message *tgbotapi.Message) {
 
 	msg.ReplyMarkup = numericKeyboard
 	bot.Send(msg)
-
 }
 
 func startTimer(message *tgbotapi.Message) {
