@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	_ "github.com/lib/pq"
 )
 
 type Order struct {
@@ -17,10 +18,13 @@ type Storage struct {
 	db *sql.DB
 }
 
-//	type Storage interface {
-//		Update(ctx context.Context, order *Order) error
-//		GetInfo(ctx context.Context, order int64) (*Order, error)
-//	}
+type Pair map[int64]Order
+
+type OwnerSitter map[int64]int64
+
+var ownerSitter = make(OwnerSitter)
+
+var pair = make(Pair)
 
 func New() (*Storage, error) {
 
@@ -29,11 +33,6 @@ func New() (*Storage, error) {
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		return nil, fmt.Errorf("can't open database: %w", err)
-	}
-
-	//Checking connection with file with db.
-	if err := db.Ping(); err != nil {
-		return nil, fmt.Errorf("can't connect to database: %w", err)
 	}
 
 	return &Storage{db: db}, nil
@@ -48,7 +47,7 @@ func (s *Storage) Update(ctx context.Context, order *Order) error {
 	return nil
 }
 
-func (s *Storage) GetInfo(ctx context.Context, orderId int64) (*Order, error) {
+func (s *Storage) GetInfo(orderId int64) (*Order, error) {
 	order := Order{}
 
 	row := s.db.QueryRow("SELECT * FROM orders WHERE id = $1", orderId)
@@ -58,6 +57,10 @@ func (s *Storage) GetInfo(ctx context.Context, orderId int64) (*Order, error) {
 		return nil, err
 	}
 
+	fmt.Println(order)
+	pair[orderId] = order
+	ownerSitter[order.owner] = order.sitter
+	ownerSitter[order.sitter] = order.owner
 	return &order, nil
 }
 
@@ -67,4 +70,11 @@ func (s *Storage) GetAll() {
 	if err != nil {
 		return
 	}
+}
+
+func (s *Storage) IsExists(sender int64) (receiver int64, err error) {
+	if receiver, ok := ownerSitter[sender]; ok {
+		return receiver, nil
+	}
+	return 0, fmt.Errorf("sender not exists")
 }
