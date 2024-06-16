@@ -21,22 +21,11 @@ type Order struct {
 	SitterId   int64
 }
 
-//var order1 = Order{Id: 1, ConsumerId: 241621664, SitterId: 6048355505}
-
 var (
 	bot *tgbotapi.BotAPI
+	s   = storage.New()
+	err error
 )
-
-var s, _ = storage.New()
-
-var err error
-
-func StartDB() {
-	s, err = storage.New()
-	if err != nil {
-		log.Fatal(err)
-	}
-}
 
 func StartBot() {
 	bot, err = tgbotapi.NewBotAPI("6954948262:AAFx4f8_efENBQ7CDeu0o27d_otTVnAKP4U")
@@ -116,6 +105,8 @@ func handleMessage(message *tgbotapi.Message) {
 		chat(message)
 	} else if strings.HasPrefix(text, "*startorder") {
 		startOrder(message)
+	} else if strings.HasPrefix(text, "*stoporder") {
+		stopOrder(message)
 	} else if message.Photo != nil {
 		sendPhoto(message)
 	}
@@ -125,14 +116,42 @@ func handleMessage(message *tgbotapi.Message) {
 	}
 }
 
+func stopOrder(message *tgbotapi.Message) {
+	var msgText string
+	var receiver int64
+	sender := message.Chat.ID
+	receiver, err := storage.IsExists(sender)
+	if err != nil {
+		log.Printf("An error occured: %s", err.Error())
+		msgText = fmt.Sprint("Чат не создан")
+	} else {
+		storage.DeletePair(message, receiver)
+		msgText = fmt.Sprint("Чат успешно удален!")
+	}
+	msg := tgbotapi.NewMessage(message.Chat.ID, msgText)
+	bot.Send(msg)
+}
+
 func startOrder(message *tgbotapi.Message) {
+	var msgText string
 	text := message.Text
 	spaceIndex := strings.Index(text, " ")
 	numStr := text[spaceIndex+1:]
 	num, _ := strconv.Atoi(numStr)
-	//msg := tgbotapi.NewMessage(message.Chat.ID, numStr)
-	order, _ := s.GetInfo(int64(num))
-	msgText := fmt.Sprintf("Chat %v succesfull created!", order)
+	order, err := s.GetInfo(int64(num))
+
+	if err != nil || order == nil {
+		msgText = fmt.Sprintf("Заказ %v не найден", num)
+	} else {
+		err = storage.CreatePair(order)
+		//fName := storage.FileName(order)
+		//storage.CreateFile(fName)
+		if err != nil {
+			msgText = fmt.Sprintf("%v", err)
+		} else {
+			msgText = fmt.Sprintf("Чат %v успешно создан!", num)
+		}
+	}
 	msg := tgbotapi.NewMessage(message.Chat.ID, msgText)
 	bot.Send(msg)
 }
@@ -185,42 +204,48 @@ func sendPhoto(message *tgbotapi.Message) {
 	}
 	var receiver int64
 	sender := message.Chat.ID
-	receiver, err := s.IsExists(sender)
+	receiver, err := storage.IsExists(sender)
 	if err != nil {
-		panic(err)
+		msg := tgbotapi.NewMessage(sender, fmt.Sprintf("%v Сообщение не отправлено!", err))
+		bot.Send(msg)
+	} else {
+
+		photoArray := message.Photo
+		lastIndex := len(photoArray) - 1
+		photo := photoArray[lastIndex]
+
+		var msg tgbotapi.Chattable
+
+		msg = tgbotapi.NewPhoto(receiver, tgbotapi.FileID(photo.FileID))
+		if _, err := bot.Send(msg); err != nil {
+			panic(err)
+		}
+
+		startTimer(message)
 	}
-
-	photoArray := message.Photo
-	lastIndex := len(photoArray) - 1
-	photo := photoArray[lastIndex]
-
-	var msg tgbotapi.Chattable
-
-	msg = tgbotapi.NewPhoto(receiver, tgbotapi.FileID(photo.FileID))
-	if _, err := bot.Send(msg); err != nil {
-		panic(err)
-	}
-
-	startTimer(message)
 
 }
 
 func chat(message *tgbotapi.Message) {
 	var receiver int64
 	sender := message.Chat.ID
-	receiver, err := s.IsExists(sender)
-	if err != nil {
-		panic(err)
-	}
-	msg := tgbotapi.NewMessage(receiver, message.Text)
-	msgReply := tgbotapi.NewMessage(sender, "Сообщение отправлено!")
+	folderName, logPair := storage.GetLogPairs(sender, receiver)
+	date := int64(message.Date)
 
-	if _, err := bot.Send(msg); err != nil {
-		panic(err)
+	receiver, err := storage.IsExists(sender)
+	if err != nil {
+		msg := tgbotapi.NewMessage(sender, fmt.Sprintf("%v Сообщение не отправлено!", err))
+		bot.Send(msg)
+	} else {
+		msgText := fmt.Sprintf("%v", message.Text)
+		msg := tgbotapi.NewMessage(receiver, msgText)
+		msgReply := tgbotapi.NewMessage(sender, fmt.Sprint("Сообщение отправлено!"))
+		storage.Logging(folderName, logPair[len(logPair)-1], sender, receiver, date, msgText)
+
+		bot.Send(msg)
+		bot.Send(msgReply)
 	}
-	if _, err := bot.Send(msgReply); err != nil {
-		panic(err)
-	}
+
 }
 
 func sendHelp(message *tgbotapi.Message) {
