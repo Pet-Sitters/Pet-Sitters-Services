@@ -144,8 +144,6 @@ func startOrder(message *tgbotapi.Message) {
 		msgText = fmt.Sprintf("Заказ %v не найден", num)
 	} else {
 		err = storage.CreatePair(order)
-		//fName := storage.FileName(order)
-		//storage.CreateFile(fName)
 		if err != nil {
 			msgText = fmt.Sprintf("%v", err)
 		} else {
@@ -181,6 +179,9 @@ func handleCommand(message *tgbotapi.Message) error {
 		break
 	case "close":
 		keyboard.KeyboardClose(bot, message)
+		break
+	case "start":
+		sendHello(message)
 		break
 	}
 
@@ -223,7 +224,6 @@ func sendPhoto(message *tgbotapi.Message) {
 
 		startTimer(message)
 	}
-
 }
 
 func chat(message *tgbotapi.Message) {
@@ -246,6 +246,12 @@ func chat(message *tgbotapi.Message) {
 		bot.Send(msgReply)
 	}
 
+}
+
+func sendHello(message *tgbotapi.Message) {
+	msg := tgbotapi.NewMessage(message.Chat.ID, command.MSGHELLO)
+	msg.ReplyToMessageID = message.MessageID
+	bot.Send(msg)
 }
 
 func sendHelp(message *tgbotapi.Message) {
