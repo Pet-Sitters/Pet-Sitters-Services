@@ -97,7 +97,7 @@ func handleMessage(message *tgbotapi.Message) {
 	} else if strings.HasPrefix(text, "*startorder") {
 		command.StartOrder(message, bot)
 	} else if strings.HasPrefix(text, "*stoporder") {
-		//stopOrder(message)
+		command.StopOrder(message, bot)
 	} else if message.Photo != nil {
 		command.SendPhoto(message, bot)
 	}

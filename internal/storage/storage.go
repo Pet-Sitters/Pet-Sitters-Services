@@ -86,8 +86,6 @@ func GetOrderInfo(num, sender int64, userName string) (*model.Order, error) {
 	fmt.Println(userMap)
 
 	return &order, nil
-
-	//return keep.ID, keep.Owner, keep.Status, keep.Sitter, nil
 }
 
 func getPair(tgNick string) int64 {
@@ -124,8 +122,6 @@ func getOwnerTgNick(id int64) (string, error) {
 		return "", err
 	}
 
-	//userMap[owner.TgNick] = owner
-
 	return owner.TgNick, err
 }
 
@@ -155,8 +151,6 @@ func getSitterTgNick(id int64) (string, error) {
 		fmt.Println(err)
 	}
 
-	//userMap[sitter.TgNick] = sitter
-
 	return sitter.TgNick, err
 }
 
@@ -172,8 +166,6 @@ func CreatePair(order *model.Order) error {
 		return errors.New("Заказ уже выполнен!")
 	}
 
-	ownerSitter[order.OwnerId] = order.SitterId
-	ownerSitter[order.SitterId] = order.OwnerId
 	createDir(order)
 	return nil
 }
@@ -238,4 +230,9 @@ func Logging(folderName, s string, sender, receiver int64, date int64, text stri
 
 func CreateUser(id int64, name string) {
 	userMap[name] = id
+}
+
+func DeletePair(sender, receiver int64) {
+	delete(ownerSitter, receiver)
+	delete(ownerSitter, sender)
 }

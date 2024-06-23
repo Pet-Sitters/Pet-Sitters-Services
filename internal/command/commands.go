@@ -5,6 +5,7 @@ import (
 	"Pet-Sitters-Services/internal/storage"
 	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"log"
 	"strconv"
 	"strings"
 	"time"
@@ -36,6 +37,22 @@ func StartOrder(message *tgbotapi.Message, bot *tgbotapi.BotAPI) {
 
 }
 
+func StopOrder(message *tgbotapi.Message, bot *tgbotapi.BotAPI) {
+	var msgText string
+	var receiver int64
+	sender := message.Chat.ID
+	receiver, err := storage.IsExists(sender)
+	if err != nil {
+		log.Printf("An error occured: %s", err.Error())
+		msgText = fmt.Sprint("Чат не создан")
+	} else {
+		storage.DeletePair(sender, receiver)
+		msgText = fmt.Sprint("Чат успешно удален!")
+	}
+	msg := tgbotapi.NewMessage(message.Chat.ID, msgText)
+	bot.Send(msg)
+}
+
 // SendPhoto позволяет пересылать фотоотчеты между владельцем и ситтером.
 // Пересылаемый объект должен быть именно фотографией. Одно фото - одно сообщение.
 // Подписи к фотографии не пересылаются. Данная функция автоматически вызывает таймер - startTimer.
@@ -62,7 +79,7 @@ func SendPhoto(message *tgbotapi.Message, bot *tgbotapi.BotAPI) {
 			panic(err)
 		}
 
-		startTimer(message, bot)
+		go startTimer(message, bot)
 	}
 }
 
