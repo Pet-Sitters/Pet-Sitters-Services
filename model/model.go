@@ -2,7 +2,7 @@ package model
 
 // Сущность заказ
 type Keep struct {
-	ID        int    `json:"id"`
+	ID        int64  `json:"id"`
 	FromDate  string `json:"from_date"`
 	ToDate    string `json:"to_date"`
 	OtherPets string `json:"other_pets"`
@@ -10,8 +10,8 @@ type Keep struct {
 	PickUp    string `json:"pick_up"`
 	Transfer  string `json:"transfer"`
 	Status    string `json:"status"`
-	Owner     int    `json:"owner"`
-	Sitter    int    `json:"sitter"`
+	Owner     int64  `json:"owner"`
+	Sitter    int64  `json:"sitter"`
 }
 
 // Сущность владелец
@@ -41,4 +41,17 @@ type Sitter struct {
 	PhoneNum  string `json:"phone_num"`
 }
 
-type OwnerSitter map[int64]int64
+type Order struct {
+	ID       int64
+	OwnerId  int64
+	SitterId int64
+	Status   string
+}
+
+type OrderMap map[int64]Order
+
+type UserMap map[string]int64
+
+//type UserMap map[string]interface{}
+
+type OrderPair map[int64]int64

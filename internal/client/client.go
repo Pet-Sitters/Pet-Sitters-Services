@@ -1,34 +1,25 @@
 package client
 
 import (
+	"Pet-Sitters-Services/config"
 	"Pet-Sitters-Services/internal/command"
 	"Pet-Sitters-Services/internal/storage"
 	"Pet-Sitters-Services/keyboard"
 	"bufio"
 	"context"
-	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"log"
 	"os"
-	"strconv"
 	"strings"
-	"time"
 )
-
-type Order struct {
-	Id         int64
-	ConsumerId int64
-	SitterId   int64
-}
 
 var (
 	bot *tgbotapi.BotAPI
-	s   = storage.New()
 	err error
 )
 
 func StartBot() {
-	bot, err = tgbotapi.NewBotAPI("6954948262:AAFx4f8_efENBQ7CDeu0o27d_otTVnAKP4U")
+	bot, err = tgbotapi.NewBotAPI(config.TG_TOKEN)
 	if err != nil {
 		// Abort if something is wrong
 		log.Panic(err)
@@ -102,56 +93,18 @@ func handleMessage(message *tgbotapi.Message) {
 	if message.IsCommand() {
 		err = handleCommand(message)
 	} else if strings.HasPrefix(text, "*chat") {
-		chat(message)
+		command.Chat(message, bot)
 	} else if strings.HasPrefix(text, "*startorder") {
-		startOrder(message)
+		command.StartOrder(message, bot)
 	} else if strings.HasPrefix(text, "*stoporder") {
-		stopOrder(message)
+		//stopOrder(message)
 	} else if message.Photo != nil {
-		sendPhoto(message)
+		command.SendPhoto(message, bot)
 	}
 
 	if err != nil {
 		log.Printf("An error occured: %s", err.Error())
 	}
-}
-
-func stopOrder(message *tgbotapi.Message) {
-	var msgText string
-	var receiver int64
-	sender := message.Chat.ID
-	receiver, err := storage.IsExists(sender)
-	if err != nil {
-		log.Printf("An error occured: %s", err.Error())
-		msgText = fmt.Sprint("Чат не создан")
-	} else {
-		storage.DeletePair(message, receiver)
-		msgText = fmt.Sprint("Чат успешно удален!")
-	}
-	msg := tgbotapi.NewMessage(message.Chat.ID, msgText)
-	bot.Send(msg)
-}
-
-func startOrder(message *tgbotapi.Message) {
-	var msgText string
-	text := message.Text
-	spaceIndex := strings.Index(text, " ")
-	numStr := text[spaceIndex+1:]
-	num, _ := strconv.Atoi(numStr)
-	order, err := s.GetInfo(int64(num))
-
-	if err != nil || order == nil {
-		msgText = fmt.Sprintf("Заказ %v не найден", num)
-	} else {
-		err = storage.CreatePair(order)
-		if err != nil {
-			msgText = fmt.Sprintf("%v", err)
-		} else {
-			msgText = fmt.Sprintf("Чат %v успешно создан!", num)
-		}
-	}
-	msg := tgbotapi.NewMessage(message.Chat.ID, msgText)
-	bot.Send(msg)
 }
 
 // When we get a command, we react accordingly
@@ -171,9 +124,6 @@ func handleCommand(message *tgbotapi.Message) error {
 	case "admin":
 		callAdmin(message)
 		break
-	case "starttimer":
-		startTimer(message)
-		break
 	case "open":
 		keyboard.OpenKeyboard(bot, message)
 		break
@@ -183,15 +133,17 @@ func handleCommand(message *tgbotapi.Message) error {
 	case "start":
 		sendHello(message)
 		break
+	case "faq":
+		sendFAQ(message)
+		break
 	}
 
 	return err
 }
 
-func startTimer(message *tgbotapi.Message) {
-	t := time.NewTimer(3 * time.Second)
-	<-t.C
-	msg := tgbotapi.NewMessage(message.Chat.ID, "Пришло время для фотоотчета!")
+func sendFAQ(message *tgbotapi.Message) {
+	msg := tgbotapi.NewMessage(message.Chat.ID, command.FAQ)
+	msg.ReplyToMessageID = message.MessageID
 	bot.Send(msg)
 }
 
@@ -199,57 +151,9 @@ func callAdmin(message *tgbotapi.Message) {
 
 }
 
-func sendPhoto(message *tgbotapi.Message) {
-	if message.Photo == nil {
-		return
-	}
-	var receiver int64
-	sender := message.Chat.ID
-	receiver, err := storage.IsExists(sender)
-	if err != nil {
-		msg := tgbotapi.NewMessage(sender, fmt.Sprintf("%v Сообщение не отправлено!", err))
-		bot.Send(msg)
-	} else {
-
-		photoArray := message.Photo
-		lastIndex := len(photoArray) - 1
-		photo := photoArray[lastIndex]
-
-		var msg tgbotapi.Chattable
-
-		msg = tgbotapi.NewPhoto(receiver, tgbotapi.FileID(photo.FileID))
-		if _, err := bot.Send(msg); err != nil {
-			panic(err)
-		}
-
-		startTimer(message)
-	}
-}
-
-func chat(message *tgbotapi.Message) {
-	var receiver int64
-	sender := message.Chat.ID
-	folderName, logPair := storage.GetLogPairs(sender, receiver)
-	date := int64(message.Date)
-
-	receiver, err := storage.IsExists(sender)
-	if err != nil {
-		msg := tgbotapi.NewMessage(sender, fmt.Sprintf("%v Сообщение не отправлено!", err))
-		bot.Send(msg)
-	} else {
-		msgText := fmt.Sprintf("%v", message.Text)
-		msg := tgbotapi.NewMessage(receiver, msgText)
-		msgReply := tgbotapi.NewMessage(sender, fmt.Sprint("Сообщение отправлено!"))
-		storage.Logging(folderName, logPair[len(logPair)-1], sender, receiver, date, msgText)
-
-		bot.Send(msg)
-		bot.Send(msgReply)
-	}
-
-}
-
 func sendHello(message *tgbotapi.Message) {
 	msg := tgbotapi.NewMessage(message.Chat.ID, command.MSGHELLO)
+	storage.CreateUser(message.Chat.ID, message.Chat.UserName)
 	msg.ReplyToMessageID = message.MessageID
 	bot.Send(msg)
 }
