@@ -18,6 +18,7 @@ var (
 	err error
 )
 
+// StartBot функция инициализирует телеграм бота по токену записанному в настройках.
 func StartBot() {
 	bot, err = tgbotapi.NewBotAPI(config.TG_TOKEN)
 	if err != nil {
@@ -25,59 +26,59 @@ func StartBot() {
 		log.Panic(err)
 	}
 
-	// Set this to true to log all interactions with telegram servers
-	bot.Debug = true
+	// Отображает в консоли все взаимодействия с серверами телеграмма.
+	bot.Debug = config.DEBUG
 
+	//Переменная для получения обновлений от серверов каждые 60 секунд
 	u := tgbotapi.NewUpdate(0)
 	u.Timeout = 60
 
-	// Create a new cancellable background context. Calling `cancel()` leads to the cancellation of the context
 	ctx := context.Background()
 	ctx, cancel := context.WithCancel(ctx)
 
-	// `updates` is a golang channel which receives telegram updates
+	// updates - канал, который получает обновления.
 	updates := bot.GetUpdatesChan(u)
 
-	// Pass cancellable context to goroutine
 	go receiveUpdates(ctx, updates)
 
-	// Tell the user the bot is online
 	log.Println("Start listening for updates. Press enter to stop")
 
-	// Wait for a newline symbol, then cancel handling updates
 	bufio.NewReader(os.Stdin).ReadBytes('\n')
 	cancel()
 
 }
 
+// receiveUpdates - получает обновления из канала и обрабатывает их.
 func receiveUpdates(ctx context.Context, updates tgbotapi.UpdatesChannel) {
-	// `for {` means the loop is infinite until we manually stop it
+	// бесконечный цикл
 	for {
 		select {
-		// stop looping if ctx is cancelled
+		// выход из цикла при отмененном ctx
 		case <-ctx.Done():
 			return
-		// receive update from channel and then handle it
+		// update получает обновление из канала и отправляет его на обработку
 		case update := <-updates:
 			handleUpdate(update)
 		}
 	}
 }
 
+// handleUpdate - обрабатывает обновления. Если обновление пришло в виде сообщения, то вызывается обработчик сообщений.
+// Если обновление в виде активированной кнопки, то вызывается обработчик нажатия клавиш.
 func handleUpdate(update tgbotapi.Update) {
 	switch {
-	// Handle messages
+
 	case update.Message != nil:
 		handleMessage(update.Message)
 		break
 
-	// Handle button clicks
 	case update.CallbackQuery != nil:
 		keyboard.HandleButton(bot, update.CallbackQuery)
 		break
 	}
 }
 
+// handleMessage - обработчик сообщений.
 func handleMessage(message *tgbotapi.Message) {
 	user := message.From
 	text := message.Text
