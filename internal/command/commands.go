@@ -14,6 +14,8 @@ import (
 // StartOrder позволяет создать пару между владельцем питомца и ситтером для их взаимодействия.
 // Без этой команды взаимодействие невозможно. Взаимодействие - переписка и отправка фотоотчетов.
 // Вызывается нестандартной командой /startorder где после команды указывается номер передержки.
+// Вызывает функции storage.GetOrderInfo и storage.CreatePair.
+// Принимает на вход сообщение(message) и экземляр бота(bot)
 func StartOrder(message *tgbotapi.Message, bot *tgbotapi.BotAPI) {
 	var msgText string
 	text := message.Text
@@ -39,6 +41,8 @@ func StartOrder(message *tgbotapi.Message, bot *tgbotapi.BotAPI) {
 
 // StopOrder позволяет завершить пару по окончанию передержки.
 // Вызывается нестандартной командой /stoporder. После данной команды номер заказа указывать не надо.
+// Вызывает функции storage.IsExists и storage.DeletePair.
+// Принимает на вход сообщение(message) и экземляр бота(bot)
 func StopOrder(message *tgbotapi.Message, bot *tgbotapi.BotAPI) {
 	var msgText string
 	var receiver int64
@@ -57,7 +61,9 @@ func StopOrder(message *tgbotapi.Message, bot *tgbotapi.BotAPI) {
 
 // SendPhoto позволяет пересылать фотоотчеты между владельцем и ситтером.
 // Пересылаемый объект должен быть именно фотографией. Одно фото - одно сообщение.
-// Подписи к фотографии не пересылаются. Данная функция автоматически вызывает таймер - startTimer.
+// Подписи к фотографии не пересылаются.
+// Вызывает функции storage.IsExists и startTimer.
+// Принимает на вход сообщение(message) и экземляр бота(bot).
 func SendPhoto(message *tgbotapi.Message, bot *tgbotapi.BotAPI) {
 	if message.Photo == nil {
 		return
@@ -86,7 +92,8 @@ func SendPhoto(message *tgbotapi.Message, bot *tgbotapi.BotAPI) {
 }
 
 // startTimer таймер, который предупреждает пользователей о необходимости фотоотчета.
-// Время для таймера задаётся в config
+// Время для таймера задаётся в config.
+// Принимает на вход сообщение(message) и экземляр бота(bot)
 func startTimer(message *tgbotapi.Message, bot *tgbotapi.BotAPI) {
 	t := time.NewTimer(config.TIMER * time.Second)
 	<-t.C
@@ -95,6 +102,8 @@ func startTimer(message *tgbotapi.Message, bot *tgbotapi.BotAPI) {
 }
 
 // Chat позволяет пересылать текстовые сообщения между владельцем и ситтером.
+// Вызывает функции storage.IsExists и storage.GetLogPairs.
+// Принимает на вход сообщение(message) и экземляр бота(bot).
 func Chat(message *tgbotapi.Message, bot *tgbotapi.BotAPI) {
 	var receiver int64
 	sender := message.Chat.ID

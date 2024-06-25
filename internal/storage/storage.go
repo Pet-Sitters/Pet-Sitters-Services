@@ -24,14 +24,34 @@ var (
 )
 
 const (
-	KEEP_URL     = "http://89.223.123.5/keep/keep_crud/"
-	TOKEN        = "Token " + config.PS_TOKEN
-	OWNER_URL    = "http://89.223.123.5/owner/owner_crud/"
-	SITTER_URL   = "http://89.223.123.5/sitter/sitter_crud/"
-	BASE_PATH    = "logger/chat"
+	// KEEP_URL путь по которому отправляется запрос для получения информации о передержки.
+	//Необходим для получения ID владельца и ситтера.
+	KEEP_URL = "http://89.223.123.5/keep/keep_crud/"
+
+	// TOKEN токен авторизации для сервиса. Необходим для возможности отправки запросов.
+	TOKEN = "Token " + config.PS_TOKEN
+
+	// OWNER_URL путь по которому отправляется запрос для получения информации о владельце питомца.
+	//Необходим для получения телеграм ника владельца.
+	OWNER_URL = "http://89.223.123.5/owner/owner_crud/"
+
+	// SITTER_URL путь по которому отправляется запрос для получения информации о ситтере.
+	//Необходим для получения телеграм ника ситтера.
+	SITTER_URL = "http://89.223.123.5/sitter/sitter_crud/"
+
+	// LOGGER_PATH путь, где хранятся истории чата передержек.
+	LOGGER_PATH = "logger/chat"
+
+	// DEFAULT_PERM права доступа к папке. Необходим для записи истории чата передержек.
 	DEFAULT_PERM = 0774
 )
 
+// GetOrderInfo - функция для получения информации о передержке. Функция отправляет запрос по адресу KEEP_URL.
+// Результатами запроса является JSON документ который затем парсится в структуру model.Keep.
+// По ID владельца и ситтера, из model.Keep, находятся телеграм ники с помощью getOwnerTgNick и getSitterTgNick.
+// sender - telegram ID отправителя
+// На вход принимается номер заказа, telegram ID(sender) и Username(username).
+// return Order, error
 func GetOrderInfo(num, sender int64, userName string) (*model.Order, error) {
 	url := KEEP_URL + strconv.FormatInt(num, 10) + "/"
 
@@ -83,7 +103,6 @@ func GetOrderInfo(num, sender int64, userName string) (*model.Order, error) {
 	ownerSitter[order.OwnerId] = order.SitterId
 	ownerSitter[order.SitterId] = order.OwnerId
 	orderMap[keep.ID] = order
-	fmt.Println(userMap)
 
 	return &order, nil
 }
@@ -172,7 +191,7 @@ func CreatePair(order *model.Order) error {
 
 func createDir(order *model.Order) {
 	path := fmt.Sprintf("%v-%v", order.OwnerId, order.SitterId)
-	fpath := filepath.Join(BASE_PATH, path)
+	fpath := filepath.Join(LOGGER_PATH, path)
 	err := os.MkdirAll(fpath, DEFAULT_PERM)
 	if err != nil {
 		log.Fatal("Can't create dir: %w", err)
@@ -196,14 +215,14 @@ func GetLogPairs(sender, receiver int64) (folder string, logPair []string) {
 	senderStr := strconv.Itoa(int(sender))
 	receiverStr := strconv.Itoa(int(receiver))
 
-	dir, err := os.ReadDir(BASE_PATH)
+	dir, err := os.ReadDir(LOGGER_PATH)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	for _, d := range dir {
 		if strings.Contains(d.Name(), senderStr) && strings.Contains(d.Name(), receiverStr) {
-			folder = BASE_PATH + "/" + d.Name()
+			folder = LOGGER_PATH + "/" + d.Name()
 		}
 	}
 
