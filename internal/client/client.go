@@ -78,7 +78,9 @@ func handleUpdate(update tgbotapi.Update) {
 	}
 }
 
-// handleMessage - обработчик сообщений.
+// handleMessage - обработчик сообщений. Полученное сообщение анализируется является ли текст сообщения типовой
+// командой, нестандартной командой или в сообщении содержится фото. В соответствии с содержимым сообщения происходит
+// выбор дальнейщего обрадотчика.
 func handleMessage(message *tgbotapi.Message) {
 	user := message.From
 	text := message.Text
@@ -87,7 +89,6 @@ func handleMessage(message *tgbotapi.Message) {
 		return
 	}
 
-	// Print to console
 	log.Printf("%s wrote %s", user.FirstName, text)
 
 	var err error
@@ -108,7 +109,8 @@ func handleMessage(message *tgbotapi.Message) {
 	}
 }
 
-// When we get a command, we react accordingly
+// handleCommand - функция для обработки стандартных команд. Если сообщение начинается с одной из команд ниже, то всё
+// сообщение считается командой.
 func handleCommand(message *tgbotapi.Message) error {
 	var err error
 
@@ -122,9 +124,9 @@ func handleCommand(message *tgbotapi.Message) error {
 	case "help":
 		sendHelp(message)
 		break
-	case "admin":
-		callAdmin(message)
-		break
+	//case "admin":
+	//	callAdmin(message)
+	//	break
 	case "open":
 		keyboard.OpenKeyboard(bot, message)
 		break
@@ -142,16 +144,19 @@ func handleCommand(message *tgbotapi.Message) error {
 	return err
 }
 
+// sendFAQ - функция отправляет сообщение с часто задаваемыми вопросами отправителю команды.
 func sendFAQ(message *tgbotapi.Message) {
 	msg := tgbotapi.NewMessage(message.Chat.ID, command.FAQ)
 	msg.ReplyToMessageID = message.MessageID
 	bot.Send(msg)
 }
 
-func callAdmin(message *tgbotapi.Message) {
+// callAdmin - функция для общения с администратором. В разработке.
+//func callAdmin(message *tgbotapi.Message) {
+//
+//}
 
-}
-
+// sendHello - функция отправляет сообщение с приветствием отправителю команды.
 func sendHello(message *tgbotapi.Message) {
 	msg := tgbotapi.NewMessage(message.Chat.ID, command.MSGHELLO)
 	storage.CreateUser(message.Chat.ID, message.Chat.UserName)
@@ -159,6 +164,7 @@ func sendHello(message *tgbotapi.Message) {
 	bot.Send(msg)
 }
 
+// sendHelp - функция отправляет сообщения со справкой отправителю команды.
 func sendHelp(message *tgbotapi.Message) {
 	msg := tgbotapi.NewMessage(message.Chat.ID, command.MSGHELP)
 	msg.ReplyToMessageID = message.MessageID

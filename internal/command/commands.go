@@ -13,13 +13,13 @@ import (
 
 // StartOrder позволяет создать пару между владельцем питомца и ситтером для их взаимодействия.
 // Без этой команды взаимодействие невозможно. Взаимодействие - переписка и отправка фотоотчетов.
+// Вызывается нестандартной командой /startorder где после команды указывается номер передержки.
 func StartOrder(message *tgbotapi.Message, bot *tgbotapi.BotAPI) {
 	var msgText string
 	text := message.Text
 	spaceIndex := strings.Index(text, " ")
 	numStr := text[spaceIndex+1:]
 	num, _ := strconv.Atoi(numStr)
-	//order, err := s.GetInfo(int64(num))
 	order, err := storage.GetOrderInfo(int64(num), message.Chat.ID, message.Chat.UserName)
 
 	if err != nil || order == nil {
@@ -37,6 +37,8 @@ func StartOrder(message *tgbotapi.Message, bot *tgbotapi.BotAPI) {
 
 }
 
+// StopOrder позволяет завершить пару по окончанию передержки.
+// Вызывается нестандартной командой /stoporder. После данной команды номер заказа указывать не надо.
 func StopOrder(message *tgbotapi.Message, bot *tgbotapi.BotAPI) {
 	var msgText string
 	var receiver int64
