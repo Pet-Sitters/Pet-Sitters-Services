@@ -17,10 +17,14 @@ import (
 )
 
 var (
-	userMap     = make(model.UserMap)
+	// userMap - переменная для хранения
+	userMap = make(model.UserMap)
+
 	ownerSitter = make(model.OrderPair)
-	client      = &http.Client{}
-	orderMap    = make(model.OrderMap)
+
+	client = &http.Client{}
+
+	orderMap = make(model.OrderMap)
 )
 
 const (
@@ -49,9 +53,9 @@ const (
 // GetOrderInfo - функция для получения информации о передержке. Функция отправляет запрос по адресу KEEP_URL.
 // Результатами запроса является JSON документ который затем парсится в структуру model.Keep.
 // По ID владельца и ситтера, из model.Keep, находятся телеграм ники с помощью getOwnerTgNick и getSitterTgNick.
-// sender - telegram ID отправителя
-// На вход принимается номер заказа, telegram ID(sender) и Username(username).
-// return Order, error
+// sender - telegram ID отправителя, записывается в структуру model.Order.
+// На вход принимается номер заказа, telegram ID(sender) и Username(userName).
+// return Order, error.
 func GetOrderInfo(num, sender int64, userName string) (*model.Order, error) {
 	url := KEEP_URL + strconv.FormatInt(num, 10) + "/"
 
@@ -100,6 +104,9 @@ func GetOrderInfo(num, sender int64, userName string) (*model.Order, error) {
 		order.OwnerId = getPair(ownerTgNick)
 	}
 
+	fmt.Println(order)
+	fmt.Println(userMap)
+
 	ownerSitter[order.OwnerId] = order.SitterId
 	ownerSitter[order.SitterId] = order.OwnerId
 	orderMap[keep.ID] = order
@@ -107,6 +114,9 @@ func GetOrderInfo(num, sender int64, userName string) (*model.Order, error) {
 	return &order, nil
 }
 
+// getPair - функция для получения второго пользователя в паре передержки, если такой имеется.
+// На вход принимается telegram Username(username).
+// return telegram ID (int64).
 func getPair(tgNick string) int64 {
 	if receiver, ok := userMap[tgNick]; ok {
 		return receiver
@@ -114,6 +124,10 @@ func getPair(tgNick string) int64 {
 	return 0
 }
 
+// getOwnerTgNick - функция для получения telegram username владельца. Функция отправляет запрос по адресу OWNER_URL.
+// Результатами запроса является JSON документ который затем парсится в структуру model.Owner.
+// На вход принимается ID владельца на сервисе(username).
+// return telegram Username (string), err.
 func getOwnerTgNick(id int64) (string, error) {
 	url := OWNER_URL + strconv.FormatInt(id, 10) + "/"
 
@@ -144,6 +158,10 @@ func getOwnerTgNick(id int64) (string, error) {
 	return owner.TgNick, err
 }
 
+// getSitterTgNick - функция для получения telegram username ситтера. Функция отправляет запрос по адресу SITTER_URL.
+// Результатами запроса является JSON документ который затем парсится в структуру model.Sitter.
+// На вход принимается ID ситтера на сервисе(username).
+// return telegram Username (string), err.
 func getSitterTgNick(id int64) (string, error) {
 	url := SITTER_URL + strconv.FormatInt(id, 10) + "/"
 
@@ -177,7 +195,7 @@ func IsExists(sender int64) (receiver int64, err error) {
 	if receiver, ok := ownerSitter[sender]; ok {
 		return receiver, nil
 	}
-	return 0, fmt.Errorf("Пары не существует!")
+	return 0, errors.New("Пары не существует!")
 }
 
 func CreatePair(order *model.Order) error {
@@ -247,10 +265,13 @@ func Logging(folderName, s string, sender, receiver int64, date int64, text stri
 	file.WriteString(log)
 }
 
+// CreateUser - функция записывает в хеш-таблицу пользователей для быстрого поиска телеграм ID.
+// На вход подаётся телеграм ID, и телеграм userName.
 func CreateUser(id int64, name string) {
 	userMap[name] = id
 }
 
+// DeletePair - функция удаляет из хеш-таблицы ownerSitter телеграм ID пользователей пары, после завершения заказа.
 func DeletePair(sender, receiver int64) {
 	delete(ownerSitter, receiver)
 	delete(ownerSitter, sender)

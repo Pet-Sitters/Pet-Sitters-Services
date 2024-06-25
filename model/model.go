@@ -1,6 +1,6 @@
 package model
 
-// Сущность заказ
+// Keep - модель заказа
 type Keep struct {
 	ID        int64  `json:"id"`
 	FromDate  string `json:"from_date"`
@@ -14,7 +14,7 @@ type Keep struct {
 	Sitter    int64  `json:"sitter"`
 }
 
-// Сущность владелец
+// Owner - модель владельца
 type Owner struct {
 	ID        int    `json:"id"`
 	FirstName string `json:"first_name"`
@@ -27,7 +27,7 @@ type Owner struct {
 	User      int    `json:"user"`
 }
 
-// Сущность ситтер
+// Sitter - модель ситтера
 type Sitter struct {
 	ID   int `json:"id"`
 	User struct {
@@ -41,6 +41,7 @@ type Sitter struct {
 	PhoneNum  string `json:"phone_num"`
 }
 
+// Order - модель заказа
 type Order struct {
 	ID       int64
 	OwnerId  int64
@@ -48,10 +49,13 @@ type Order struct {
 	Status   string
 }
 
+// OrderMap - хеш-таблица хранит заказы, где ключом является номер заказа.
 type OrderMap map[int64]Order
 
+// UserMap - хеш-таблица хранит пользователей. Ключ - телеграм ник, значение - телеграм ID.
+// Необходима для быстрого поиска адресата сообщения в чате передержки.
 type UserMap map[string]int64
 
-//type UserMap map[string]interface{}
-
+// OrderPair - хеш-таблица хранит пару пользователей в паре. Ключ - телеграм ID одного из пользователей, значение - телеграм ID
+// второго пользователя в паре.
 type OrderPair map[int64]int64
