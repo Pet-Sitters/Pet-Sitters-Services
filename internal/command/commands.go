@@ -107,6 +107,9 @@ func startTimer(message *tgbotapi.Message, bot *tgbotapi.BotAPI) {
 func Chat(message *tgbotapi.Message, bot *tgbotapi.BotAPI) {
 	var receiver int64
 	sender := message.Chat.ID
+
+	//получение директории в которой хранятся все передержки соответствующих владельца и ситтера, а также всех
+	//заказов данной пары
 	folderName, logPair := storage.GetLogPairs(sender, receiver)
 	date := int64(message.Date)
 
@@ -118,6 +121,8 @@ func Chat(message *tgbotapi.Message, bot *tgbotapi.BotAPI) {
 		msgText := fmt.Sprintf("%v", message.Text)
 		msg := tgbotapi.NewMessage(receiver, msgText)
 		msgReply := tgbotapi.NewMessage(sender, fmt.Sprint("Сообщение отправлено!"))
+
+		//Запись чата в файл
 		storage.Logging(folderName, logPair[len(logPair)-1], sender, receiver, date, msgText)
 
 		bot.Send(msg)

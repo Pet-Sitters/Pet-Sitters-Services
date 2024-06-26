@@ -17,13 +17,16 @@ import (
 )
 
 var (
-	// userMap - переменная для хранения
+	// userMap - переменная для хранения пользователей
 	userMap = make(model.UserMap)
 
+	// ownerSitter - переменная для хранения ID пользователей в паре
 	ownerSitter = make(model.OrderPair)
 
+	// client - клиент пакета "http" для отправки запросов
 	client = &http.Client{}
 
+	// orderMap - переменная для хранения заказов
 	orderMap = make(model.OrderMap)
 )
 
@@ -191,6 +194,9 @@ func getSitterTgNick(id int64) (string, error) {
 	return sitter.TgNick, err
 }
 
+// IsExists - функция проверяет существование получателя сообщения по отправителю. Проверка осуществляется
+// в хеш-таблице содержащей ID пользователей в паре. На вход функция принимает телеграм ID отправителя.
+// На выходе функция возвращает телеграм ID получателя и ошибку, при её наличии.
 func IsExists(sender int64) (receiver int64, err error) {
 	if receiver, ok := ownerSitter[sender]; ok {
 		return receiver, nil
@@ -198,6 +204,7 @@ func IsExists(sender int64) (receiver int64, err error) {
 	return 0, errors.New("Пары не существует!")
 }
 
+// CreatePair - функция проверяет завершен ли заказ. Если его статус не завершен, то вызывается функция createDir.
 func CreatePair(order *model.Order) error {
 	if order.Status == "done" {
 		return errors.New("Заказ уже выполнен!")
@@ -207,6 +214,12 @@ func CreatePair(order *model.Order) error {
 	return nil
 }
 
+// createDir - функция, создающая директорию по пути LOGGER_PATH. На вход функция принимает ссылку на объект
+// типа *model.Order. По завершению функции по указанному пути образуется директорию имеющая название
+// в формате "Tg_ID_owner-Tg_ID_sitter". В данной папке будут храниться файлы с логами всех чатов передержек
+// данной пары.
+// Пример, имеется пара пользователей Tg_ID_owner = 123456789 и Tg_ID_sitter = 987654321, тогда
+// создастся директория logger/chat/123456789-987654321
 func createDir(order *model.Order) {
 	path := fmt.Sprintf("%v-%v", order.OwnerId, order.SitterId)
 	fpath := filepath.Join(LOGGER_PATH, path)
@@ -217,6 +230,12 @@ func createDir(order *model.Order) {
 	createFile(fpath, order)
 }
 
+// createFile - функция, создающая файл в директории из createDir. На вход функция принимает директорию и ссылку
+// на объект типа *model.Order. По завершению функции в директории создастся файл с именем номера
+// передержки и расширением log.
+// Пример, имеется пара пользователей Tg_ID_owner = 123456789 и Tg_ID_sitter = 987654321. У данной пары был
+// заказ под номером 2 и текущий под номером 5. Тогда в директории logger/chat/123456789-987654321 будет
+// два файла - 2.log и 5.log.
 func createFile(fpath string, order *model.Order) {
 	filePath := fmt.Sprintf("%v/%v.log", fpath, order.ID)
 	file, err := os.OpenFile(filePath, os.O_APPEND|os.O_WRONLY|os.O_CREATE, DEFAULT_PERM)
@@ -229,6 +248,9 @@ func createFile(fpath string, order *model.Order) {
 	file.WriteString(log)
 }
 
+// GetLogPairs - функция для чтения директории с логами чатов. На вход функции подаётся телеграм ID отправителя и
+// получателя сообщения. Функция возвращает директорию в которой хранятся логи чатов и слайс с номерами чатов
+// передержек.
 func GetLogPairs(sender, receiver int64) (folder string, logPair []string) {
 	senderStr := strconv.Itoa(int(sender))
 	receiverStr := strconv.Itoa(int(receiver))
@@ -254,6 +276,13 @@ func GetLogPairs(sender, receiver int64) (folder string, logPair []string) {
 	return folder, logPair
 }
 
+// Logging - функция для записи текстового чата в файл. Файл расположен по пути logger/chat.
+// Входные переменные:
+// - путь к папке, которая имеет название состоящее из телеграм ID владельца и ситтера,
+// - имя документа с чатом последней передержки,
+// - Телеграм ID отправителя и получателя сообщения,
+// - дата сообщения,
+// - текст сообщения.
 func Logging(folderName, s string, sender, receiver int64, date int64, text string) {
 	file, err := os.OpenFile(folderName+"/"+s, os.O_APPEND|os.O_WRONLY, DEFAULT_PERM)
 	if err != nil {

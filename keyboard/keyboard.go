@@ -6,16 +6,17 @@ import (
 )
 
 var (
-	// Menu texts
+	// Текст меню
 	firstMenu  = command.MSGHELLO
 	secondMenu = command.MSGHELP
 	faqMenu    = command.FAQ
 
-	// Button texts
+	// Кнопки с текстом
 	helpButton = "Help"
 	backButton = "Back"
 	faqButton  = "FAQ"
 
+	// Кнопки встроенной клавиатуры снизу
 	numericKeyboard = tgbotapi.NewReplyKeyboard(
 		tgbotapi.NewKeyboardButtonRow(
 			tgbotapi.NewKeyboardButton("/help"),
@@ -24,14 +25,14 @@ var (
 		),
 	)
 
-	// Keyboard layout for the first menu. One button, one row
+	// Раскладка клавиатуры для первого меню. Одна кнопка, по одной в ряду
 	firstMenuMarkup = tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(helpButton, helpButton),
 		),
 	)
 
-	// Keyboard layout for the second menu. Two buttons, one per row
+	// Раскладка клавиатуры для второго меню. Две кнопки, по одной в ряду
 	secondMenuMarkup = tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(backButton, backButton),
@@ -39,6 +40,7 @@ var (
 		),
 	)
 
+	// Раскладка клавиатуры для первого меню. Одна кнопка, по одной в ряду
 	faqMenuMarkup = tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(backButton, backButton),
@@ -46,6 +48,7 @@ var (
 	)
 )
 
+// HandleButton - функция для обработки действия с кнопками
 func HandleButton(bot *tgbotapi.BotAPI, query *tgbotapi.CallbackQuery) {
 	var text string
 
@@ -69,12 +72,12 @@ func HandleButton(bot *tgbotapi.BotAPI, query *tgbotapi.CallbackQuery) {
 	callbackCfg := tgbotapi.NewCallback(query.ID, "")
 	bot.Send(callbackCfg)
 
-	// Replace menu text and keyboard
 	msg := tgbotapi.NewEditMessageTextAndMarkup(message.Chat.ID, message.MessageID, text, markup)
 	msg.ParseMode = tgbotapi.ModeHTML
 	bot.Send(msg)
 }
 
+// SendMenu - функция для отправки меню
 func SendMenu(bot *tgbotapi.BotAPI, chatId int64) error {
 	msg := tgbotapi.NewMessage(chatId, firstMenu)
 	msg.ParseMode = tgbotapi.ModeHTML
@@ -83,6 +86,7 @@ func SendMenu(bot *tgbotapi.BotAPI, chatId int64) error {
 	return err
 }
 
+// OpenKeyboard - функция для открытия встроенной клавиатуры
 func OpenKeyboard(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
 	msg := tgbotapi.NewMessage(message.Chat.ID, message.Text)
 
@@ -90,6 +94,7 @@ func OpenKeyboard(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
 	bot.Send(msg)
 }
 
+// KeyboardClose - функция для закрытия встроенной клавиатуры
 func KeyboardClose(bot *tgbotapi.BotAPI, message *tgbotapi.Message) {
 	msg := tgbotapi.NewMessage(message.Chat.ID, message.Text)
 	msg.ReplyMarkup = tgbotapi.NewRemoveKeyboard(true)
